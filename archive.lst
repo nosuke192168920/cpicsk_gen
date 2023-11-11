@@ -1,0 +1,11 @@
+cpicsk_gen/cpicsk_gen.c
+cpicsk_gen/Makefile
+cpicsk_gen/README.md
+cpicsk_gen/cpicsk_gen.exe
+cpicsk_gen/template.hex
+cpicsk_gen/minipro
+cpicsk_gen/minipro/template.hex
+cpicsk_gen/xgpro
+cpicsk_gen/xgpro/template.hex
+cpicsk_gen/key.txt
+cpicsk_gen/archive.lst

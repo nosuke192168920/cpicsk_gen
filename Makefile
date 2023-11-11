@@ -7,6 +7,7 @@ TARGET = cpicsk_gen
 ZIP = cpicsk_gen.zip
 
 OBJS = cpicsk_gen.o
+LIST=archive.lst
 
 all: $(TARGET)
 
@@ -19,5 +20,5 @@ cpicsk_gen: $(OBJS)
 clean:
 	rm -f *.o *~ $(TARGET)
 
-archive:
-	cd .. && zip -r $(ZIP) cpicsk_gen --exclude '*.git*'
+archive: $(LIST)
+	cd .. && zip -r $(ZIP) cpicsk_gen -i@cpicsk_gen/$(LIST)
