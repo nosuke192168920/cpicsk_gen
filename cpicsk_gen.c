@@ -13,7 +13,6 @@
 #include <errno.h>
 
 #define KEY_LEN 11
-//#define KEY_OFFSET 0x1e8
 #define KEY_INTERVAL 2
 
 #define TEMPLATE_EXPECT 0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF, 0x11, 0x33, 0x55, 0x77
@@ -183,7 +182,6 @@ parse_hex_line(char *line, unsigned short *offset, int *byte_count, unsigned cha
     return ret;
 }
 
-
 int
 search_template_in_hex(FILE *fpi)
 {
@@ -230,7 +228,6 @@ search_template_in_hex(FILE *fpi)
         }
     }
 
-    rewind(fpi);
     return ret;
 }
 
@@ -238,58 +235,71 @@ search_template_in_hex(FILE *fpi)
 int
 patch_hex(char *line, unsigned char config[], int offset, int interval, int length)
 {
-    int byte_count = 0;
     char *p = line;
+    int byte_count;
     unsigned short address = 0;
-    unsigned char addr_low, addr_high;
+    int addr_low, addr_high;
     enum record_type type;
-    unsigned char sum = 0;
+    int sum = 0;
     char tmp[3];
-    int len = strlen(line);
+    int len;
     unsigned char expect[KEY_LEN + 1] = {TEMPLATE_EXPECT};
-    int ret = 1;
+    int ret = 0;
+
+    remove_newline_code(line);
+    len = strlen(line);
+
+    // length must be larger than 11
+    // 11 = start code (1) + byte count (2) + address (4) + record type (2)
+    //      + check sum (2)
+    if (len < 11) {
+        fprintf(stderr, "Hex file error: line \"%s\" is too short (%d)\n",
+                line, len);
+        return -1;
+    }
 
     // start code
     if (p == NULL || *p != ':') {
-        fprintf(stderr, "invalid format\n");
+        fprintf(stderr, "Hex file error: 1st character is not ':'\n");
         return -1;
     }
     p += 1;
     len --;
 
-    if (len < 2) {
-        fprintf(stderr, "invalid format\n");
-        return -1;
-    }
 
     // byte count
     byte_count = hexstr2val(p);
+    if (byte_count < 0) {
+        fprintf(stderr, "Hex file error: non hexadecimal characters\n");
+        return -1;
+    }
     sum += byte_count;
     p += 2;
     len -= 2;
-
-    if (len < 4) {
-        fprintf(stderr, "invalid format\n");
+   
+    // address
+    addr_high = hexstr2val(p);
+    addr_low = hexstr2val(p + 2);
+    if (addr_high < 0 || addr_low < 0) {
+        fprintf(stderr, "Hex file error: non hexadecimal characters\n");
         return -1;
     }
-    
-    // address
-    addr_high = (unsigned short)hexstr2val(p);
-    addr_low = (unsigned short)hexstr2val(p + 2);
     sum += addr_high + addr_low;
     
-    address = (unsigned short)(addr_high << 8)
-        | (unsigned short)hexstr2val(p + 2);
+    address = (unsigned short)((addr_high << 8) | addr_low);
     p += 4;
     len -= 4;
 
-    if (len < 2) {
-        fprintf(stderr, "invalid format\n");
+    // record type
+    type = hexstr2val(p);
+    if (type < 0) {
+        fprintf(stderr, "Hex file error: non hexadecimal characters\n");
         return -1;
     }
 
-    // record type
-    type = hexstr2val(p);
+    if (type != DATA)
+        return 0;
+
     sum += type;
     p += 2;
     len -= 2;
@@ -301,7 +311,12 @@ patch_hex(char *line, unsigned char config[], int offset, int interval, int leng
     }
     
     for (int i = 0; i < byte_count; i++) {
-        unsigned char d;
+        int d = hexstr2val(p);
+
+        if (d < 0) {
+            fprintf(stderr, "Hex file error: non hexadecimal characters\n");
+            return -1;
+        }
 
         if (type == DATA
             && address >= offset
@@ -310,24 +325,21 @@ patch_hex(char *line, unsigned char config[], int offset, int interval, int leng
 
             int idx = (address - offset) / interval;
 
-            unsigned char org = hexstr2val(p);
-            if (org != expect[idx]) {
+            if (d != expect[idx]) {
                 fprintf(stderr, "Template file error: "
                         "address: 0x%04x, expected: 0x%02x, original: 0x%02x\n",
-                        address, expect[idx], org);
+                        address, expect[idx], d);
                 ret = -1;
             }
 
-            d = config[idx];
-            sprintf(tmp, "%02X", d);
+            sprintf(tmp, "%02X", config[idx]);
             *p = tmp[0];
             *(p + 1) = tmp[1];
-
+            ret++; // replace count
+            sum += config[idx];
         } else {
-            d = hexstr2val(p);
+            sum += d;
         }
-
-        sum += d;
         p += 2;
         len -= 2;
         
@@ -339,10 +351,10 @@ patch_hex(char *line, unsigned char config[], int offset, int interval, int leng
         fprintf(stderr, "invalid format\n");
         return -1;
     }
+    
+    //sum = 0 - sum;
 
-    sum = 0 - sum;
-
-    sprintf(p, "%02X", sum);
+    sprintf(p, "%02X", -sum & 0xff);
 
     return ret;
 }
@@ -403,10 +415,10 @@ parse_key(char *buf, unsigned char config[])
 
 
 void
-dump(unsigned char *p, int len)
+dump(unsigned char *p, int len, int noaddr)
 {
     for (int i = 0; i < len; i++) {
-        if (i % 16 == 0)
+        if (!noaddr && i % 16 == 0)
             printf("%08x  ", i);
 
         printf("%02x", p[i]);
@@ -485,10 +497,10 @@ main(int argc, char **argv)
 
    
     printf("================================\n");
-    printf("Key data:\n");
+    printf("Key data:\t");
 
-    dump(config, KEY_LEN);
-    printf("Debug flag: %s\n", config[KEY_LEN] == 0 ? "Disabled" : "Enabled");
+    dump(config, KEY_LEN, 1);
+    printf("Debug flag:\t%s\n", config[KEY_LEN] == 0 ? "Disabled" : "Enabled");
   
     printf("================================\n");
     
@@ -518,6 +530,8 @@ main(int argc, char **argv)
         printf("OK\n");
     }
 
+    printf("Key template offset: 0x%03x\n", key_offset);
+
     printf("Write to output file \"%s\" ... ", outfile);
     fflush(stdout);
     
@@ -528,7 +542,8 @@ main(int argc, char **argv)
         fprintf(stderr, "Output file \"%s\" open failed\n", outfile);
         goto FIN;
     }
-        
+
+    rewind(fpi);        
     while (fgets(buf, sizeof(buf) - 1, fpi) > 0) {
         patch_hex(buf, config, key_offset, KEY_INTERVAL, KEY_LEN + 1);
         fprintf(fpo, "%s\r\n", buf);
