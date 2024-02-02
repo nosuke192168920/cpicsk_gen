@@ -19,6 +19,10 @@
 
 #define PIC_PROGRAM_SIZE_MAX (0x400 * 2)
 
+#define CONFIG_DEFAULT ":021FFE00EAFFF8"
+#define CONFIG_XGPRO   ":020FFE00EA0FF8"
+
+
 int
 hexstr2val(char *hex)
 {
@@ -437,17 +441,19 @@ dump(unsigned char *p, int len, int noaddr)
 #define TEMPLATE_FILE "template.hex"
 #define KEY_FILE "key.txt"
 #define OUT_FILE "cpicskprg.hex"
+#define OUT_FILE2 "cpicskprg_xgpro.hex"
 
 
 int
 main(int argc, char **argv)
 {
-    FILE *fpi, *fpo;
-    char buf[256];
+    FILE *fpi, *fpo, *fpo2;
+    char buf[512];
 
     char *templatefile;
     char *keyfile;
     char *outfile;
+    char *outfile2;
     unsigned char config[KEY_LEN + 1];
     int ret = -1;
     int key_offset;
@@ -456,18 +462,20 @@ main(int argc, char **argv)
     if (!(argc == 1 || argc == 4)) {
         fprintf(stderr, "Invalid argument\n");
         fprintf(stderr, "USAGE: cpicsk_gen\n");
-        fprintf(stderr, "USAGE: cpicsk_gen <templatefile> <keyfile> <outfile>\n");
+        fprintf(stderr, "USAGE: cpicsk_gen <templatefile> <keyfile> <outfile> <outfile2>\n");
         goto FIN;
     }
 
-    if (argc == 4) {
+    if (argc == 5) {
         templatefile = argv[1];
         keyfile = argv[2];
         outfile = argv[3];
+        outfile2 = argv[4];
     } else {
         templatefile = TEMPLATE_FILE;
         keyfile = KEY_FILE;
         outfile = OUT_FILE;
+        outfile2 = OUT_FILE2;
     }
     
 
@@ -529,7 +537,7 @@ main(int argc, char **argv)
 
     printf("Key template offset: 0x%03x\n", key_offset);
 
-    printf("Write to output file \"%s\" ... ", outfile);
+    printf("Write to output file \"%s\" & \"%s\" ... ", outfile, outfile2);
     fflush(stdout);
     
 
@@ -540,15 +548,32 @@ main(int argc, char **argv)
         goto FIN;
     }
 
+
+    fpo2 = fopen(outfile2, "wb");
+    if (fpo2 == NULL) {
+        perror("fopen");
+        fprintf(stderr, "Output file \"%s\" open failed\n", outfile2);
+        goto FIN;
+    }
+
+
     rewind(fpi);        
     while (fgets(buf, sizeof(buf) - 1, fpi) > 0) {
         patch_hex(buf, config, key_offset, KEY_INTERVAL, KEY_LEN + 1);
         fprintf(fpo, "%s\r\n", buf);
+
+        if (strncmp(buf, CONFIG_DEFAULT, strlen(CONFIG_DEFAULT)) == 0) {
+            memcpy(buf, CONFIG_XGPRO, strlen(CONFIG_XGPRO));
+        }
+
+        fprintf(fpo2, "%s\r\n", buf);
+
     }
 
     printf("OK\n");
     
     fclose(fpo);
+    fclose(fpo2);
 
     fclose(fpi);
 
