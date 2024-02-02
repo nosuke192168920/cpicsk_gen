@@ -346,14 +346,11 @@ patch_hex(char *line, unsigned char config[], int offset, int interval, int leng
         address++;
     }
 
-    
     if (len < 2) {
         fprintf(stderr, "invalid format\n");
         return -1;
     }
     
-    //sum = 0 - sum;
-
     sprintf(p, "%02X", -sum & 0xff);
 
     return ret;
