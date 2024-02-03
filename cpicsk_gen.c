@@ -22,6 +22,15 @@
 #define CONFIG_DEFAULT ":021FFE00EAFFF8"
 #define CONFIG_XGPRO   ":020FFE00EA0FF8"
 
+enum ihex_record_type {
+    DATA = 0,
+    END_OF_FILE,
+    EXT_SEG_ADDR,
+    START_SEG_ADDR,
+    EXT_LINEAR_ADDR,
+    START_LINEAR_ADDR
+};
+
 
 int
 hexstr2val(char *hex)
@@ -41,16 +50,6 @@ hexstr2val(char *hex)
 
     return ret;
 }
-
-
-enum record_type {
-    DATA = 0,
-    END_OF_FILE,
-    EXT_SEG_ADDR,
-    START_SEG_ADDR,
-    EXT_LINEAR_ADDR,
-    START_LINEAR_ADDR
-};
 
 
 void
@@ -84,7 +83,7 @@ parse_hex_line(char *line, unsigned short *offset, int *byte_count, unsigned cha
     char *p = line; 
     int len;
     int addr_low, addr_high;
-    enum record_type type;
+    enum ihex_record_type type;
     int sum_org, sum = 0;
     int ret = 1;
 
@@ -243,7 +242,7 @@ patch_hex(char *line, unsigned char config[], int offset, int interval, int leng
     int byte_count;
     unsigned short address = 0;
     int addr_low, addr_high;
-    enum record_type type;
+    enum ihex_record_type type;
     int sum = 0;
     char tmp[3];
     int len;
@@ -368,7 +367,7 @@ parse_key(char *buf, unsigned char config[])
     char *p = buf;
 
 
-    // NOTE: size of config is KEY_LEN + 1 and the last entry is used for blink flag
+    // NOTE: size of config is KEY_LEN + 1 and the last entry is used for debug flag
     config[KEY_LEN] = 0;
 
     // parse key file
@@ -402,12 +401,10 @@ parse_key(char *buf, unsigned char config[])
         if (p2 != NULL) {
             p = p2 + 1;
 
-            // process blink flag
+            // process debug flag
             if (i == KEY_LEN - 1) {
                 errno = 0;
-                val = strtol(p, &p2, 0);
-                if (val != 0)
-                    config[KEY_LEN] = 1; // last entry is used for debug flag
+                config[KEY_LEN] = strtol(p, &p2, 0); // last entry is used for debug flag
             }
         }
     }
@@ -458,26 +455,22 @@ main(int argc, char **argv)
     int ret = -1;
     int key_offset;
 
-
-    if (!(argc == 1 || argc == 4)) {
-        fprintf(stderr, "Invalid argument\n");
-        fprintf(stderr, "USAGE: cpicsk_gen\n");
-        fprintf(stderr, "USAGE: cpicsk_gen <templatefile> <keyfile> <outfile> <outfile2>\n");
-        goto FIN;
-    }
-
     if (argc == 5) {
         templatefile = argv[1];
         keyfile = argv[2];
         outfile = argv[3];
         outfile2 = argv[4];
-    } else {
+    } else if (argc == 1) {
         templatefile = TEMPLATE_FILE;
         keyfile = KEY_FILE;
         outfile = OUT_FILE;
         outfile2 = OUT_FILE2;
+    } else {
+        fprintf(stderr, "Invalid argument\n");
+        fprintf(stderr, "USAGE: cpicsk_gen\n");
+        fprintf(stderr, "       cpicsk_gen <templatefile> <keyfile> <outfile> <outfile2>\n");
+        goto FIN;
     }
-    
 
     // read key file
     printf("Read key file \"%s\" ... ", keyfile);
@@ -502,10 +495,11 @@ main(int argc, char **argv)
 
    
     printf("================================\n");
-    printf("Key data:\t");
+    printf("Key:\t");
 
     dump(config, KEY_LEN, 1);
-    printf("Debug flag:\t%s\n", config[KEY_LEN] == 0 ? "Disabled" : "Enabled");
+    printf("Blink:\t%s\n", config[KEY_LEN] & 1 ? "Yes" : "No");
+    printf("Slow:\t%s\n", config[KEY_LEN] & 2 ? "Yes" : "No");
   
     printf("================================\n");
     
@@ -532,10 +526,8 @@ main(int argc, char **argv)
         fclose(fpi);
         goto FIN; 
     } else {
-        printf("OK\n");
+        printf("OK (key template offset: 0x%03x)\n", key_offset);
     }
-
-    printf("Key template offset: 0x%03x\n", key_offset);
 
     printf("Write to output file \"%s\" & \"%s\" ... ", outfile, outfile2);
     fflush(stdout);
