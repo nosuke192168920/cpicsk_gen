@@ -1,4 +1,4 @@
-# cpics2_gen
+# cpicsk_gen
 
 ## 概要
 
@@ -6,9 +6,10 @@ cpicsk_genは、
 CPicSKのPIC12F509に書き込むプログラムを生成するツールです。
 
 cpicsk_gen.exe を起動すると、
-テンプレートとなるプログラムのhexファイル（template.hex）を読み込み、
-そこに別のファイル（key.txt）で指定したキー情報を書き込んで、
-新規にhexファイル（cpicskprg.hex）を出力します。
+テンプレートとなるプログラムのhexファイル (template.hex) を読み込み、
+そこに別のファイル (key.txt) で指定したキー情報をマージし、
+実際にPICに書き込むプログラムのhexファイル (cpicskprg.hex
+および cpicskprg_xgpro.hex) を出力します。
 
 ## 動作環境
 
@@ -16,12 +17,12 @@ cpicsk_gen.exe は、
 32bit版および64bit版のWindows 10上で動作することを確認しています。
 それ以外のバージョンのWindows上でも動作するかもしれませんが、未確認です。
 
-実行ファイルが動作しない場合や、
+実行ファイルが動作しない場合や
 MacやLinuxなどのWindows以外の環境で実行する場合は、
 C言語で書かれたソースコードが付属しているので、
 これをコンパイルし直して実行ファイルを作成してみてください。
 
-コンパイルの仕方については、
+コンパイルの仕方については
 このドキュメントの後ろの方に書かれています。
 
 
@@ -29,10 +30,11 @@ C言語で書かれたソースコードが付属しているので、
 
 1. key.txtを、メモ帳などの適当なテキストエディタで開きます
 
-2. key.txtに、Cpicskで書き込みたいキー情報を記述して保存します
+2. key.txtに、CPicSK でKABUKIに書き込みたいキー情報を記述して保存します
 
       キー情報は、「0xAA,0x55,0x05,...」のように、
       1Byteずつカンマで区切って、「0x」で始まる16進数表記で半角で記述して下さい。
+      カンマの後ろに半角スペースを入れても構いません。
 
       デフォルトでは、「0xFF」が11Byte分、カンマ区切りで記述されています。
 
@@ -43,21 +45,30 @@ C言語で書かれたソースコードが付属しているので、
 
         Read key file "key.txt" ... OK
         ================================
-        Key data:
-        00000000  ff ff ff ff ff ff ff ff  ff ff ff
+        Key:         ff ff ff ff ff ff ff ff  ff ff ff
+        Start delay: 0 msec
+        Blink:       No
+        Slow:        No
         ================================
         Read template hex file "template.hex" ... OK
-        Write to output file "cpicskprg.hex" ... OK
+        Write to output file "cpicskprg.hex" & "cpicskprg_xgpro.hex" ... OK
         Press any key to exit.
 
-      `Key data:`と書かれたところの下に、
+      `Key:`と書かれたところの横に、
       key.txt から読み込まれたキー情報が表示されます。
 
 4. ウィンドウをクリックして、何かキーを押すと、ウィンドウが閉じます
 
       cpicsk_gen.exe と同じフォルダに生成される
-      cpicskprg.hex という名前のファイルが、
+      cpicskprg.hex という名前のファイル
+      もしくは cpicskprg_xgpro.hex という名前のファイルが
       PIC12F509に書き込むプログラムになります。
+
+      2つのhexファイルに含まれるプログラムの中身は同一ですが、
+      使用するツールによってどちらのファイルを使うかを選択します。
+      通常は前者を利用しますが、
+      XgproやMaxLoaderでPIC12F509に書き込みを行う際は後者を利用します。
+
 
 ## コンパイルの仕方
 
@@ -73,7 +84,7 @@ Macは所持していないため、未確認です。
 
 ## 著作権表記
 
-Copyright (c) 2023 nosuke <<sasugaanija@gmail.com>>
+Copyright (c) 2024 nosuke <<sasugaanija@gmail.com>>
 
 
 ## License
