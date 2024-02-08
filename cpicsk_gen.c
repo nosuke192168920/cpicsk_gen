@@ -21,8 +21,6 @@
 
 #define TEMPLATE_START 0x1e4
 
-#define PIC_PROGRAM_SIZE_MAX (0x400 * 2)
-
 #define CONFIG_DEFAULT ":021FFE00EAFFF8"
 #define CONFIG_XGPRO   ":020FFE00EA0FF8"
 
@@ -223,7 +221,7 @@ parse_key(char *buf, unsigned char config[])
             *p2 = '\0';
         } else if (i < KEY_LEN - 1) {
             // ',' not found and i is not last value
-            fprintf(stderr, "Invalid key (key should be %d Byte or larger)\n", KEY_LEN);
+            fprintf(stderr, "Invalid key (key must be %d Byte or larger)\n", KEY_LEN);
             return -1;
         }
         
@@ -231,7 +229,7 @@ parse_key(char *buf, unsigned char config[])
         val = strtol(p, NULL, 0);
         if (errno != 0) {
             perror("strtol");
-            fprintf(stderr, "Invalid key (key should be hexadecimal value array)\n");
+            fprintf(stderr, "Invalid key\n");
             return -1;
         }
 
@@ -244,14 +242,6 @@ parse_key(char *buf, unsigned char config[])
 
         if (p2 != NULL) {
             p = p2 + 1;
-
-/*
-            // process debug flag
-            if (i == KEY_LEN - 1) {
-                errno = 0;
-                config[KEY_LEN] = strtol(p, &p2, 0); // last entry is used for debug flag
-            }
-*/
         } else {
             // last entry
             break;
@@ -347,12 +337,12 @@ main(int argc, char **argv)
 
    
     printf("================================\n");
-    printf("Key:\t");
+    printf("Key:         ");
 
     dump(config, KEY_LEN, 1);
-    printf("Start delay:\t%d msec\n", config[KEY_LEN] * 10);
-    printf("Blink:\t%s\n", config[KEY_LEN + 1] ? "Yes" : "No");
-    printf("Slow:\t%s\n", config[KEY_LEN + 2] ? "Yes" : "No");
+    printf("Start delay: %d msec\n", config[KEY_LEN] * 10);
+    printf("Blink:       %s\n", config[KEY_LEN + 1] ? "Yes" : "No");
+    printf("Slow:        %s\n", config[KEY_LEN + 2] ? "Yes" : "No");
   
     printf("================================\n");
     
@@ -371,21 +361,6 @@ main(int argc, char **argv)
     // search template key location in template hex file
 
     printf("OK\n");
-
-/*
-    key_offset = search_template_in_hex(fpi);
-    if (key_offset < 0) {
-        fclose(fpi);
-        goto FIN;
-    } else if (key_offset == PIC_PROGRAM_SIZE_MAX) {
-        // no expect data
-        fprintf(stderr, "Tempalte hex file error: no expected data found\n");
-        fclose(fpi);
-        goto FIN; 
-    } else {
-        printf("OK (key template offset: 0x%03x)\n", key_offset);
-    }
-*/
 
     printf("Write to output file \"%s\" & \"%s\" ... ", outfile, outfile2);
     fflush(stdout);
