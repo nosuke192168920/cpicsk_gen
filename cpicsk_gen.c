@@ -11,11 +11,14 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <ctype.h>
 
-#define KEY_LEN 11
-#define CONFIG_LEN (KEY_LEN + 3)
+#define CODE_LEN 11
+#define CONFIG_LEN (CODE_LEN + 3)
 
-#define KEY_INTERVAL 2
+#define TITLE_LEN 256
+
+#define HEX_INTERVAL 2
 
 #define TEMPLATE_EXPECT 0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF, 0x11, 0x33, 0x55, 0x77, 0x99, 0xBB
 
@@ -82,7 +85,7 @@ remove_newline_code(char *line)
 
 
 int
-patch_hex(char *line, unsigned char config[], int offset, int interval, int length)
+patch_hex(char *line, unsigned char config[], int offset, int length)
 {
     char *p = line;
     int byte_count;
@@ -169,10 +172,10 @@ patch_hex(char *line, unsigned char config[], int offset, int interval, int leng
 
         if (type == DATA
             && address >= offset
-            && address < offset + interval * length
-            && (address - offset) % interval == 0) {
+            && address < offset + HEX_INTERVAL * length
+            && (address - offset) % HEX_INTERVAL == 0) {
 
-            int idx = (address - offset) / interval;
+            int idx = (address - offset) / HEX_INTERVAL;
 
             if (d != expect[idx]) {
                 fprintf(stderr, "Template file error: "
@@ -208,46 +211,87 @@ patch_hex(char *line, unsigned char config[], int offset, int interval, int leng
 
 
 int
-parse_key(char *buf, unsigned char config[])
+read_config(char *buf, unsigned char *config, char *title)
 {
     char *p = buf;
+    char *p_next;
+    int idx = 0;
+    int val;
 
-    // parse key file
+    // config file format:
+    // ( *(VAL) *,){CODE_LEN-1,CONFIG_LEN-1} *(num) *# *(.*)$
+    // VAL is integer value from 0 to 255
+
     for (int i = 0; i < CONFIG_LEN; i++) {
-        char *p2;
-        long val;
-        p2 = strchr(p, ',');
-        if (p2 != NULL) {
-            *p2 = '\0';
-        } else if (i < KEY_LEN - 1) {
-            // ',' not found and i is not last value
-            fprintf(stderr, "Invalid key (key must be %d Byte or larger)\n", KEY_LEN);
-            return -1;
-        }
-        
+        // skip space
+        while (isspace(*p))
+            p++;
+
         errno = 0;
-        val = strtol(p, NULL, 0);
+        val = strtol(p, &p_next, 0);
         if (errno != 0) {
             perror("strtol");
-            fprintf(stderr, "Invalid key\n");
-            return -1;
+            fprintf(stderr, "Invalid config\n");
+            //return -1;
+            goto POINT_ERROR;
+        }
+
+        if (p == p_next) {
+            fprintf(stderr, "Invalid config format\n");
+            //return -1;
+            goto POINT_ERROR;
         }
 
         if (val < 0 || val > 256) {
-            fprintf(stderr, "Invalid key (each value of key should be a single byte data)\n");
-            return -1;
+            fprintf(stderr, "Invalid config (each value of config must be a single byte data)\n");
+            //return -1;
+            goto POINT_ERROR;
         }
 
-        config[i] = val;
+        config[idx++] = val;
+        p = p_next;
 
-        if (p2 != NULL) {
-            p = p2 + 1;
-        } else {
-            // last entry
+        while (isspace(*p))
+            p++;
+
+        if (*p != ',') {
             break;
         }
+
+        p++;
     }
+
+    if (idx < CODE_LEN) {
+        fprintf(stderr, "Invalid config format (too short)\n");
+        goto POINT_ERROR;
+    }
+
+    // title
+
+    // skip space
+    while (isspace(*p))
+        p++;
+
+    if (*p == '#') {
+        p++;
+        // skip space
+        while (isspace(*p))
+            p++;
+        strncpy(title, p, TITLE_LEN);
+        title[TITLE_LEN - 1] = '\0';
+    }
+
     return 1;
+
+POINT_ERROR:
+    printf("idx=%d\n", idx);
+    printf("%s\n", buf);
+    for (char *p1 = buf; p1 != p; p1++) {
+        printf(" ");
+    }
+    printf("^\n");
+
+    return -1;
 }
 
 
@@ -275,7 +319,7 @@ dump(unsigned char *p, int len, int noaddr)
 
 
 #define TEMPLATE_FILE "template.hex"
-#define KEY_FILE "key.txt"
+#define CONFIG_FILE "config.txt"
 #define OUT_FILE "cpicskprg.hex"
 #define OUT_FILE2 "cpicskprg_xgpro.hex"
 
@@ -287,38 +331,38 @@ main(int argc, char **argv)
     char buf[512];
 
     char *templatefile;
-    char *keyfile;
+    char *configfile;
     char *outfile;
     char *outfile2;
     unsigned char config[CONFIG_LEN];
+    char title[TITLE_LEN] = "";
     int ret = -1;
-//    int key_offset;
 
     if (argc == 5) {
         templatefile = argv[1];
-        keyfile = argv[2];
+        configfile = argv[2];
         outfile = argv[3];
         outfile2 = argv[4];
     } else if (argc == 1) {
         templatefile = TEMPLATE_FILE;
-        keyfile = KEY_FILE;
+        configfile = CONFIG_FILE;
         outfile = OUT_FILE;
         outfile2 = OUT_FILE2;
     } else {
         fprintf(stderr, "Invalid argument\n");
         fprintf(stderr, "USAGE: cpicsk_gen\n");
-        fprintf(stderr, "       cpicsk_gen <templatefile> <keyfile> <outfile> <outfile2>\n");
+        fprintf(stderr, "       cpicsk_gen <template> <config> <out1> <out2>\n");
         goto FIN;
     }
 
-    // read key file
-    printf("Read key file \"%s\" ... ", keyfile);
+    // read config file
+    printf("Read config file \"%s\" ... ", configfile);
     fflush(stdout);
     
-    fpi = fopen(keyfile, "rb");
+    fpi = fopen(configfile, "rb");
     if (fpi == NULL) {
         perror("fopen");
-        fprintf(stderr, "Key file \"%s\" open failed\n", keyfile);
+        fprintf(stderr, "Config file \"%s\" open failed\n", configfile);
         goto FIN;
     }
 
@@ -328,21 +372,22 @@ main(int argc, char **argv)
 
     fclose(fpi);
 
+    remove_newline_code(buf);
 
     memset(config, 0, CONFIG_LEN);
 
-    if (parse_key(buf, config) < 0) {
+    if (read_config(buf, config, title) < 0) {
         goto FIN;
     }
 
    
     printf("================================\n");
-    printf("Key:         ");
-
-    dump(config, KEY_LEN, 1);
-    printf("Start delay: %d msec\n", config[KEY_LEN] * 10);
-    printf("Blink:       %s\n", config[KEY_LEN + 1] ? "Yes" : "No");
-    printf("Slow:        %s\n", config[KEY_LEN + 2] ? "Yes" : "No");
+    printf("Title: %s\n", title);
+    printf("Code:  ");
+    dump(config, CODE_LEN, 1);
+    printf("Delay: %d msec\n", config[CODE_LEN] * 10);
+    printf("Blink: %s\n", config[CODE_LEN + 1] ? "Yes" : "No");
+    printf("Slow:  %s\n", config[CODE_LEN + 2] ? "Yes" : "No");
   
     printf("================================\n");
     
@@ -358,7 +403,7 @@ main(int argc, char **argv)
         goto FIN;
     }
 
-    // search template key location in template hex file
+    // search template code location in template hex file
 
     printf("OK\n");
 
@@ -384,7 +429,7 @@ main(int argc, char **argv)
 
     rewind(fpi);        
     while (fgets(buf, sizeof(buf) - 1, fpi) > 0) {
-        patch_hex(buf, config, TEMPLATE_START, KEY_INTERVAL, CONFIG_LEN);
+        patch_hex(buf, config, TEMPLATE_START, CONFIG_LEN);
         fprintf(fpo, "%s\r\n", buf);
 
         if (strncmp(buf, CONFIG_DEFAULT, strlen(CONFIG_DEFAULT)) == 0) {
@@ -407,7 +452,7 @@ main(int argc, char **argv)
  FIN:
     fflush(stderr);
 
-    printf("Press any key to exit.\n");
+    printf("Press enter key to exit.\n");
 
     fflush(stdout);
     
