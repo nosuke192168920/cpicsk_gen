@@ -327,7 +327,7 @@ dump(unsigned char *p, int len, int noaddr)
 int
 main(int argc, char **argv)
 {
-    FILE *fpi, *fpo, *fpo2;
+    FILE *fpi, *fpo;
     char buf[512];
 
     char *templatefile;
@@ -350,8 +350,8 @@ main(int argc, char **argv)
         outfile2 = OUT_FILE2;
     } else {
         fprintf(stderr, "Invalid argument\n");
-        fprintf(stderr, "USAGE: cpicsk_gen\n");
-        fprintf(stderr, "       cpicsk_gen <template> <config> <out1> <out2>\n");
+        fprintf(stderr, "USAGE: %s\n", argv[0]);
+        fprintf(stderr, "       %s <template> <config> <out1> <out2>\n", argv[0]);
         goto FIN;
     }
 
@@ -407,9 +407,8 @@ main(int argc, char **argv)
 
     printf("OK\n");
 
-    printf("Write to output file \"%s\" & \"%s\" ... ", outfile, outfile2);
+    printf("Generate hex file for regular programmer \"%s\" ... ", outfile);
     fflush(stdout);
-    
 
     fpo = fopen(outfile, "wb");
     if (fpo == NULL) {
@@ -417,33 +416,40 @@ main(int argc, char **argv)
         fprintf(stderr, "Output file \"%s\" open failed\n", outfile);
         goto FIN;
     }
+    
+    rewind(fpi);
+    while (fgets(buf, sizeof(buf) - 1, fpi) > 0) {
+        patch_hex(buf, config, TEMPLATE_START, CONFIG_LEN);
+        fprintf(fpo, "%s\r\n", buf);
+    }
+    fclose(fpo);
+
+    printf("OK\n");
 
 
-    fpo2 = fopen(outfile2, "wb");
-    if (fpo2 == NULL) {
+    printf("Generate hex file for Xgpro \"%s\" ... ", outfile2);
+    fflush(stdout);
+    
+    fpo = fopen(outfile2, "wb");
+    if (fpo == NULL) {
         perror("fopen");
         fprintf(stderr, "Output file \"%s\" open failed\n", outfile2);
         goto FIN;
     }
 
 
-    rewind(fpi);        
+    rewind(fpi);
     while (fgets(buf, sizeof(buf) - 1, fpi) > 0) {
         patch_hex(buf, config, TEMPLATE_START, CONFIG_LEN);
-        fprintf(fpo, "%s\r\n", buf);
-
         if (strncmp(buf, CONFIG_DEFAULT, strlen(CONFIG_DEFAULT)) == 0) {
             memcpy(buf, CONFIG_XGPRO, strlen(CONFIG_XGPRO));
         }
-
-        fprintf(fpo2, "%s\r\n", buf);
-
+        fprintf(fpo, "%s\r\n", buf);
     }
 
     printf("OK\n");
     
     fclose(fpo);
-    fclose(fpo2);
 
     fclose(fpi);
 
