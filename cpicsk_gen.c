@@ -13,6 +13,10 @@
 #include <errno.h>
 #include <ctype.h>
 
+#ifdef __MINGW32__
+#include <windows.h>
+#endif
+
 #define CODE_LEN 11
 #define CONFIG_LEN (CODE_LEN + 3)
 
@@ -26,6 +30,34 @@
 
 #define CONFIG_DEFAULT ":021FFE00EAFFF8"
 #define CONFIG_XGPRO   ":020FFE00EA0FF8"
+
+
+#ifdef __MINGW32__
+int cp_org_valid = 0;
+UINT cp_org;
+
+BOOL WINAPI ConsoleHandler(DWORD dwType)
+{
+    switch(dwType) {
+    case CTRL_C_EVENT:
+        if (cp_org_valid) {
+            SetConsoleOutputCP(cp_org);
+        }
+        return FALSE;
+        break;
+    case CTRL_BREAK_EVENT:
+        if (cp_org_valid) {
+            SetConsoleOutputCP(cp_org);
+        }
+        return FALSE;
+        break;
+    default:
+        
+    }
+    return TRUE;
+}
+#endif
+
 
 enum ihex_record_type {
     DATA = 0,
@@ -321,7 +353,7 @@ dump(unsigned char *p, int len, int noaddr)
 #define TEMPLATE_FILE "template.hex"
 #define CONFIG_FILE "config.txt"
 #define OUT_FILE "cpicskprg.hex"
-#define OUT_FILE2 "cpicskprg_xgpro.hex"
+#define OUT_FILE2 "cpicskprgx.hex"
 
 
 int
@@ -337,6 +369,14 @@ main(int argc, char **argv)
     unsigned char config[CONFIG_LEN];
     char title[TITLE_LEN] = "";
     int ret = -1;
+
+#ifdef __MINGW32__
+    cp_org = GetConsoleOutputCP();
+    cp_org_valid = 1;
+    SetConsoleCtrlHandler((PHANDLER_ROUTINE)ConsoleHandler,TRUE);
+    SetConsoleOutputCP(65001);
+#endif
+
 
     if (argc == 5) {
         templatefile = argv[1];
@@ -463,6 +503,10 @@ main(int argc, char **argv)
     fflush(stdout);
     
     getchar();
+
+#ifdef __MINGW32__
+    SetConsoleOutputCP(cp_org);
+#endif
     
     return ret;
 }
