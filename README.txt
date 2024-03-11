@@ -1,7 +1,7 @@
 ■概要
 
-cpicsk_gen および kabuki_config_gen はCPicSKに装着する
-PIC12F509に書き込むプログラムを生成するWindows用のツールです。
+kabuki_config_gen および cpicsk_gen は、CPicSK用の
+PIC12F509に書き込むプログラムを生成する専用ツールです。
 
 
 ■使い方
@@ -11,7 +11,7 @@ kabuki_config.exe や cpicsk_gen.exe と同じフォルダに置いてくださ�
 
 https://github.com/mamedev/mame/blob/master/src/mame/capcom/kabuki.cpp
 
-2. kabuki_code_gen.exe をダブルクリックしてください。
+2. kabuki_code_gen.exe をダブルクリックします。
 コマンドプロンプトが開き、KABUKI搭載ゲーム基板の一覧が番号と
 ともに表示されます。
 
@@ -20,11 +20,12 @@ Enterを押してください。正しく動作している場合、config.txt �
 ファイルが生成されます。再度Enterを押すとウィンドウが閉じます。
 
 4. cpicsk_gen.exe をダブルクリックしてください。
-再びコマンドプロンプトが開き、cpicskprg.hex というファイルと
-cpicskprgx.hexというファイルの2つのファイルが生成されます。
-前者が通常のPICライタ用のプログラムファイル、後者がXgpro用の
-プログラムファイルになります。お使いのPICライタに合わせて、
-適切なファイルを利用してください。
+再びコマンドプロンプトが開き、先程選択したゲームのタイトルが
+表示されるはずです。
+また、同時にcpicskprg.hex とcpicskprgx.hexの2つのファイルが
+生成されます。前者が通常のPICライタ用のプログラムファイル、
+後者がXgpro用のプログラムファイルになります。お使いの
+PICライタに合わせて適切なファイルをご利用ください。
 再度Enterを押すとウィンドウが閉じます。
 
 
