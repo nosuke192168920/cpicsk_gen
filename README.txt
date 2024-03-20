@@ -6,26 +6,34 @@ PIC12F509に書き込むプログラムを生成する専用ツールです。
 
 ■使い方
 
-1. GitHubのMAMEのソースコードツリーより、kabuki.cpp をダウンロードして
-kabuki_config.exe や cpicsk_gen.exe と同じフォルダに置いてください。
+1. GitHubのMAMEのソースコードツリーより、kabuki.cpp を
+ダウンロードして、kabuki_config.exe や cpicsk_gen.exe と
+同じフォルダに置いてください。
 
 https://github.com/mamedev/mame/blob/master/src/mame/capcom/kabuki.cpp
 
-2. kabuki_code_gen.exe をダブルクリックします。
-コマンドプロンプトが開き、KABUKI搭載ゲーム基板の一覧が番号と
-ともに表示されます。
 
-3. CPicSKを装着する予定のゲーム基板の番号を半角数字で入力して
-Enterを押してください。正しく動作している場合、config.txt という
-ファイルが生成されます。再度Enterを押すとウィンドウが閉じます。
+2. kabuki_code_gen.exe をダブルクリックするなどして
+起動してください。
 
-4. cpicsk_gen.exe をダブルクリックしてください。
-再びコマンドプロンプトが開き、先程選択したゲームのタイトルが
-表示されるはずです。
-また、同時にcpicskprg.hex とcpicskprgx.hexの2つのファイルが
+コマンドプロンプトが開き、KABUKI搭載ゲーム基板の一覧が
+番号とともに表示されます。
+
+
+3. CPicSKを装着する予定のゲーム基板の番号を半角数字で
+入力してEnterを押してください。正しく動作している場合、
+config.txt というファイルが生成されます。
+再度Enterを押すとウィンドウが閉じます。
+
+
+4. cpicsk_gen.exe をダブルクリックするなどして
+起動してください。再びコマンドプロンプトが開き、
+先程選択したゲームのタイトルが表示されるはずです。
+
+このとき、cpicskprg.hex とcpicskprgx.hexの2つのファイルが
 生成されます。前者が通常のPICライタ用のプログラムファイル、
-後者がXgpro用のプログラムファイルになります。お使いの
-PICライタに合わせて適切なファイルをご利用ください。
+後者がXgpro用のプログラムファイルになります。
+お使いのPICライタに合わせて適切なファイルをご利用ください。
 再度Enterを押すとウィンドウが閉じます。
 
 
@@ -37,9 +45,10 @@ https://bit.ly/cpicsk_manual_simple.pdf
 
 ■動作環境
 
-64bit版および32bit版のWindows 10上で動作することを確認しています。
+64bit版およびWindows 10上で動作することを確認しています。
 
-それ以外のバージョンのWindows上でも動作するかもしれませんが未確認です。
+32bit版のWindows 10や、Windows 10以外のバージョンの
+Windows上でも動作するかもしれませんが未確認です。
 
 
 ■ソースコード
@@ -59,3 +68,7 @@ Copyright (c) 2024 nosuke <<sasugaanija@gmail.com>>
 
 各ツールのライセンスはMITライセンスに基づきます。
 
+
+■バージョン情報
+
+* v1.0 初版 (2024/3/20)
