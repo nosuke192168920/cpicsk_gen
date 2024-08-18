@@ -13,9 +13,17 @@
 #include <errno.h>
 #include <ctype.h>
 
+#include <unistd.h>
+extern char *optarg;
+extern int optind, opterr, optopt;
+#include <getopt.h>
+
 #ifdef __MINGW32__
 #include <windows.h>
 #endif
+
+#define COPY "2024 nosuke <sasugaanija@gmail.com>"
+#define VERSION "1.0"
 
 #define CODE_LEN 11
 #define CONFIG_LEN (CODE_LEN + 3)
@@ -351,6 +359,29 @@ dump(unsigned char *p, int len, int noaddr)
 #define OUT_FILE2 "cpicskprgx.hex"
 
 
+void
+version()
+{
+    printf("CPicSK program generator (ver %s)\n", VERSION);
+    printf("Copyright (c) %s\n", COPY);
+}
+
+void
+usage(char **argv)
+{
+    fprintf(stderr, "USAGE: %s [OPTION]\n", argv[0]);
+    fprintf(stderr, "       %s [OPTION] <template> <config> <out1> <out2>\n\n", argv[0]);
+
+    fprintf(stderr, "  template: template PIC program file (default: %s)\n", TEMPLATE_FILE);
+    fprintf(stderr, "  config:   KABUKI configuration file (default: %s)\n", CONFIG_FILE);
+    fprintf(stderr, "  out1:     PIC program file for general programmer (default: %s)\n", OUT_FILE);
+    fprintf(stderr, "  out2:     PIC program file for Xgpro (default: %s)\n\n", OUT_FILE2);
+
+    fprintf(stderr, "Options:\n");
+    fprintf(stderr, "  -v         show tool version\n");   
+    fprintf(stderr, "  -h         show this message\n");   
+}
+
 int
 main(int argc, char **argv)
 {
@@ -365,6 +396,8 @@ main(int argc, char **argv)
     char title[TITLE_LEN] = "";
     int ret = -1;
 
+    int opt;
+
 #ifdef __MINGW32__
     cp_org = GetConsoleOutputCP();
     cp_org_valid = 1;
@@ -372,21 +405,35 @@ main(int argc, char **argv)
     SetConsoleOutputCP(65001);
 #endif
 
+    while ((opt = getopt(argc, argv, "vh")) != -1) {
+        switch (opt) {
+        case 'v':
+            ret = 0;
+            version();
+            goto FIN;
+        case 'h':
+            usage(argv);
+            goto FIN;
+        default:
+            fprintf(stderr, "Invalid options\n");
+            usage(argv);
+            goto FIN;
+        }
+    }
 
-    if (argc == 5) {
-        templatefile = argv[1];
-        configfile = argv[2];
-        outfile = argv[3];
-        outfile2 = argv[4];
-    } else if (argc == 1) {
+    if (argc - optind == 4) {
+        templatefile = argv[optind];
+        configfile = argv[optind + 1];
+        outfile = argv[optind + 2];
+        outfile2 = argv[optind + 3];
+    } else if (argc - optind == 0) {
         templatefile = TEMPLATE_FILE;
         configfile = CONFIG_FILE;
         outfile = OUT_FILE;
         outfile2 = OUT_FILE2;
     } else {
         fprintf(stderr, "Invalid argument\n");
-        fprintf(stderr, "USAGE: %s\n", argv[0]);
-        fprintf(stderr, "       %s <template> <config> <out1> <out2>\n", argv[0]);
+        usage(argv);
         goto FIN;
     }
 
