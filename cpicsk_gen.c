@@ -23,7 +23,7 @@ extern int optind, opterr, optopt;
 #endif
 
 #define COPY "2024 nosuke <sasugaanija@gmail.com>"
-#define VERSION "1.0"
+#define VERSION "1.01"
 
 #define CODE_LEN 11
 #define CONFIG_LEN (CODE_LEN + 3)
