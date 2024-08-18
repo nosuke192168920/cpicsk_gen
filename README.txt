@@ -40,7 +40,7 @@ config.txt というファイルが生成されます。
 ※より詳細な手順等に関しては、以下のCPicSKのマニュアルを
 参照してください。
 
-https://bit.ly/cpicsk_manual_simple.pdf
+https://bit.ly/cpicsk_manual
 
 
 ■動作環境
@@ -70,6 +70,11 @@ Copyright (c) 2024 nosuke <<sasugaanija@gmail.com>>
 
 
 ■バージョン情報
+
+* v1.1a (2024/8/19)
+** cpicsk_gen にバージョン表示のための-vオプションを追加
+** kabuki_config_gen のバージョン表示形式を変更
+** 本ドキュメントのマニュアルのURLを修正
 
 * v1.1 (2024/6/24)
 ** PICがオシレータのキャリブレーション値を使うようにプログラムの
