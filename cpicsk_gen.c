@@ -254,7 +254,7 @@ read_config(char *buf, unsigned char *config, char *title)
     int val;
 
     // config file format:
-    // ( *(VAL) *,){CODE_LEN-1,CONFIG_LEN-1} *(num) *# *(.*)$
+    // ( *(VAL) *,){CODE_LEN-1,CONFIG_LEN-1} *(VAL) *# *(.*)$
     // VAL is integer value from 0 to 255
 
     for (int i = 0; i < CONFIG_LEN; i++) {

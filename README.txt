@@ -7,13 +7,13 @@ PIC12F509に書き込むプログラムを生成する専用ツールです。
 ■使い方
 
 1. GitHubのMAMEのソースコードツリーより、kabuki.cpp を
-ダウンロードして、kabuki_config.exe や cpicsk_gen.exe と
+ダウンロードして、kabuki_config_gen.exe や cpicsk_gen.exe と
 同じフォルダに置いてください。
 
 https://github.com/mamedev/mame/blob/master/src/mame/capcom/kabuki.cpp
 
 
-2. kabuki_code_gen.exe をダブルクリックするなどして
+2. kabuki_config_gen.exe をダブルクリックするなどして
 起動してください。
 
 コマンドプロンプトが開き、KABUKI搭載ゲーム基板の一覧が
@@ -70,6 +70,9 @@ Copyright (c) 2024 nosuke <<sasugaanija@gmail.com>>
 
 
 ■バージョン情報
+
+* v1.1b (2025/4/22)
+** 本ドキュメントのtypoを修正
 
 * v1.1a (2024/8/19)
 ** cpicsk_gen にバージョン表示のための-vオプションを追加
