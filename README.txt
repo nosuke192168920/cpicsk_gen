@@ -61,7 +61,7 @@ Windows上でも動作するかもしれませんが未確認です。
 
 ■著作権表記
 
-Copyright (c) 2024 nosuke <<sasugaanija@gmail.com>>
+Copyright (c) 2024-2025 nosuke <<sasugaanija@gmail.com>>
 
 
 ■ライセンス
